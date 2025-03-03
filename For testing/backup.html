@@ -1,0 +1,146 @@
+//         currentPageData.forEach(log => {
+    //             const card = document.createElement('div');
+    //             card.className = `log-card bg-white shadow-lg rounded-lg p-4 sm:p-6 transition-transform duration-300 ${log.error !== "None" ? 'error-card' : ''}`;
+    
+    //             const title = document.createElement('h2');
+    //             title.className = 'text-xl mb-1 text-gray-800 font-semibold';
+    //             title.innerHTML = `<div>${log.type} ${log.name} ${log.subtype}</div>`;
+    //             // title.textContent = `Time - ${log.time}`;
+    //             card.appendChild(title);
+    
+    //             // Add error warning if applicable
+    //             if (log.error !== "None") {
+    //                 const errorDiv = document.createElement('div');
+    //                 errorDiv.className = 'mb-2';
+    //                 errorDiv.innerHTML = `<div class="text-red-600"><i class="fas fa-exclamation-triangle icon"></i> <strong>Error:</strong> ${log.error}</div><div>Date: ${log.date}</div><div>Time: ${log.time}</div>`;
+    //                 card.appendChild(errorDiv);
+    //             }
+    
+    // let errorFlag = false; // Flag to track if there are any errors
+    
+    // // Lux Level Section
+    // const luxSection = document.createElement('div');
+    // luxSection.className = 'mb-4';
+    // const luxError = log.luxLevel < 200 || log.luxLevel > 500;
+    // if (luxError) {
+    //     errorFlag = true;
+    //     luxSection.innerHTML = `
+    //         <div class="section-title">
+    //             <i class="fas fa-sun subtype-icon"></i> Lux Level
+    //         </div>
+    //         <div class="error-section">
+    //             <span class="error-message">
+    //                 <i class="fas fa-exclamation-circle icon"></i> Lux Level out of range!
+    //             </span>
+    //         </div>
+    //     `;
+    //     card.appendChild(luxSection);
+    // }
+    
+    // // Wind Section
+    // const windSection = document.createElement('div');
+    // windSection.className = 'mb-4';
+    // const windError = log.windSpeed > 14;
+    // if (windError) {
+    //     errorFlag = true;
+    //     windSection.innerHTML = `
+    //         <div class="section-title">
+    //             <i class="fas fa-wind subtype-icon"></i> Wind
+    //         </div>
+    //         <div class="error-section">
+    //             <span class="error-message">
+    //                 <i class="fas fa-exclamation-circle icon"></i> High Wind Alert!
+    //             </span>
+    //         </div>
+    //     `;
+    //     card.appendChild(windSection);
+    // }
+    
+    // // Temperature Section
+    // const temperatureSection = document.createElement('div');
+    // temperatureSection.className = 'mb-4';
+    // const temperatureError = log.tempreature > 30;
+    // if (temperatureError) {
+    //     errorFlag = true;
+    //     temperatureSection.innerHTML = `
+    //         <div class="section-title">
+    //             <i class="fas fa-thermometer-half subtype-icon"></i> Temperature
+    //         </div>
+    //         <div class="error-section">
+    //             <span class="error-message">
+    //                 <i class="fas fa-exclamation-circle icon"></i> High Temperature Alert!
+    //             </span>
+    //         </div>
+    //     `;
+    //     card.appendChild(temperatureSection);
+    // }
+    
+    // // Occupancy Section
+    // const occupancySection = document.createElement('div');
+    // occupancySection.className = 'mb-4';
+    // const occupancyError = log.occupancy === "Vacant" && log.lightLevel === "Bright";
+    // if (occupancyError) {
+    //     errorFlag = true;
+    //     occupancySection.innerHTML = `
+    //         <div class="section-title">
+    //             <i class="fas fa-users subtype-icon"></i> Occupancy
+    //         </div>
+    //         <div class="error-section">
+    //             <span class="error-message">
+    //                 <i class="fas fa-exclamation-circle icon"></i> Lights on in vacant area!
+    //             </span>
+    //         </div>
+    //     `;
+    //     card.appendChild(occupancySection);
+    // }
+    
+    // // Power Section
+    // const powerSection = document.createElement('div');
+    // powerSection.className = 'mb-4';
+    // const powerError = log.kwhConsumed > 80;
+    // if (powerError) {
+    //     errorFlag = true;
+    //     powerSection.innerHTML = `
+    //         <div class="section-title">
+    //             <i class="fas fa-bolt subtype-icon"></i> Energy Saved
+    //         </div>
+    //         <div class="error-section">
+    //             <span class="error-message">
+    //                 <i class="fas fa-exclamation-circle icon"></i> High Power Consumption!
+    //             </span>
+    //         </div>
+    //     `;
+    //     card.appendChild(powerSection);
+    // }
+    
+    // // Energy Section
+    // const energySection = document.createElement('div');
+    // energySection.className = 'mb-4';
+    // const energyError = log.EnergyConsumption > 20;
+    // if (energyError) {
+    //     errorFlag = true;
+    //     energySection.innerHTML = `
+    //         <div class="section-title">
+    //             <i class="fas fa-bolt subtype-icon"></i> Energy Consumption
+    //         </div>
+    //         <div class="error-section">
+    //             <span class="error-message">
+    //                 <i class="fas fa-exclamation-circle icon"></i> High Power Consumption!
+    //             </span>
+    //         </div>
+    //     `;
+    //     card.appendChild(energySection);
+    // }
+    
+    // // ✅ **Only Append the Card If There Are Any Errors**
+    // if (errorFlag) {
+    //     document.body.appendChild(card); // Change `document.body` to the actual parent container
+    // }
+    
+                
+    
+    //             logContainer.appendChild(card);
+    
+    //             updatePagination(totalPages);
+    //         });
+          
