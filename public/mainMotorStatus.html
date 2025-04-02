@@ -6,9 +6,35 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Motor Status</title>
     <link rel="icon" type="image/x-icon" href="./images/favicon.ico">
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+    <script type="text/javascript">
+        var require = {
+            paths: {
+                "nmodule": "/module",
+                "baja": "/module/bajaScript/rc/plugin/baja",
+                "bajaScript": "/module/bajaScript/rc",
+                "bajaux": "/module/bajaux/rc",
+                "lex": "/module/js/rc/lex/lexplugin",
+                "log": "/module/js/rc/log/logPlugin",
+                "css": "/module/js/com/tridium/js/ext/require/css",
+                "jquery": "/module/js/rc/jquery/jquery",
+                "Handlebars": "/module/js/rc/handlebars/handlebars",
+                "Promise": "/module/js/rc/bluebird/bluebird",
+                "hbs": "/module/js/rc/require-handlebars-plugin/hbs",
+                "i18nprecompile": "/module/js/rc/require-handlebars-plugin/hbs/i18nprecompile",
+                "json2": "/module/js/rc/require-handlebars-plugin/hbs/json2",
+                "underscore": "/module/js/rc/underscore/underscore",
+                "baja.comm.Batch": "/module/bajaScript/baja.comm.Batch",
+                "dialogs": '/module/js/rc/dialogs/dialogs.built.min'
+                // "baja!schedule:Schedule": "/module/bajaScript/rc/schedule/Schedule",
+            },
+            hbs: {
+                disableI18n: true
+            }
+        };
+        console.log("RequireJS paths set:", require);
+    </script>
+    <script src="/css/tailwind.css"></script>
+    <link rel="stylesheet" href="public/fontawesome-free/css/all.min.css">
     <style>
         body {
             font-family: 'Roboto', sans-serif;
@@ -137,25 +163,209 @@
         </footer>
     </div>
 
+<script src="file:^newxlsx.js"></script>
+<script type="text/javascript" 
+        data-main="/module/bajaScript/rc/plugin/baja" 
+        src="file:^rc/requireJs.js"></script>
+      
+      <script src="/js/tailwind.js"></script>
     <!-- JavaScript to Populate Data -->
+   
     <script>
-const statusData = [
-            { floor: "Floor 1", moco: "Moco 1", mocoFault: "fault", id: 1 },
-            { floor: "Floor 1", moco: "Moco 2", mocoFault: "No fault", id: 2 },
-            { floor: "Floor 1", moco: "Moco 3", mocoFault: "No fault", id: 3 },
-            { floor: "Floor 1", moco: "Moco 4", mocoFault: "fault", id: 4 },
-            { floor: "Floor 1", moco: "Moco 5", mocoFault: "fault", id: 5 },
-            { floor: "Floor 1", moco: "Moco 6", mocoFault: "fault", id: 6 },
-            { floor: "Floor 1", moco: "Moco 7", mocoFault: "No fault", id: 7 },
-            { floor: "Floor 1", moco: "Moco 8", mocoFault: "fault", id: 8 },
-            { floor: "Floor 1", moco: "Moco 9", mocoFault: "No fault", id: 8 },
-            { floor: "Floor 1", moco: "Moco 10", mocoFault: "fault", id: 8 },
-            { floor: "Floor 1", moco: "Moco 10", mocoFault: "fault", id: 8 },
-            { floor: "Floor 1", moco: "Moco 10", mocoFault: "fault", id: 8 },
-            { floor: "Floor 1", moco: "Moco 10", mocoFault: "fault", id: 8 }
-        ];
+require([
+  'baja!',
+  'baja!control:NumericWritable',
+  'baja!control:BooleanWritable',
+  'baja!control:StringWritable'
+], function (
+  baja,
+  NumericWritable,
+  BooleanWritable,
+  StringWritable
+) {
+  "use strict";
 
-        let currentPage = 1;
+  const sub = new baja.Subscriber();
+  
+  // Function to get folder names (children) of a parent folder
+  function getFolderNames(parentPath) {
+    return new Promise((resolve) => {
+      // Use baja.Ord.make().get() to get the folder component
+      baja.Ord.make(parentPath).get({ subscriber: sub })
+        .then(parent => {
+          if (!parent) {
+            console.warn('Parent not found:', parentPath);
+            resolve([]);
+            return;
+          }
+          
+          // Get all slots that are components (folders)
+          const slots = parent.getSlots()
+            .properties()
+            .isComponent()
+            .toArray();
+            
+          // Extract just the names of the children
+          const names = slots.map(slot => slot.getName());
+          console.log('Found folder names at', parentPath, ':', names);
+          resolve(names);
+        })
+        .catch(err => {
+          console.error('Error getting folder names from', parentPath, err);
+          resolve([]);
+        });
+    });
+  }
+
+  // Function to check error status for a moco
+  async function checkErrorStatus(mocoPath) {
+  try {
+    const errorPath = `${mocoPath}/MocoError`;
+    
+    //   baja.Ord.make(errorPath).get({ subscriber: sub }).then((point) => {
+    //     console.log(`Fetched from ${errorPath}:`, point.getOutDisplay());
+
+    // }).catch((err) => console.error(`Error fetching ${errorPath}:`, err));
+    
+    // Check if point exists first
+    const exists = await baja.Ord.make(errorPath).exists();
+    if (!exists) return false;
+    
+    // Get the point
+    const errorPoint = await baja.Ord.make(errorPath).get({ subscriber: sub });
+    if (!errorPoint) return false;
+    
+    // Get the current value
+    const status = await errorPoint.get('out').get();
+    return status === true;
+  } catch (err) {
+    console.error(`Error checking MocoError at ${mocoPath}:`, err);
+    return false;
+  }
+}
+
+  function fetchStatusData() {
+    const basePath = 'station:|slot:/Drivers/somfy/maincontroller';
+    const statusData = [];
+    
+    const floorNumbers = {};
+    let nextFloorNumber = 1;
+    const mocoCounters = {};
+
+    console.log('Starting data fetch from:', basePath);
+    
+    // First get all floor names (folders under maincontroller)
+    return getFolderNames(basePath)
+      .then(floorNames => {
+        if (!floorNames || floorNames.length === 0) {
+          console.warn('No floors found at path:', basePath);
+          return [];
+        }
+
+        const floorPromises = floorNames.map(floorName => {
+          const floorPath = `${basePath}/${floorName}`;
+          
+          if (!floorNumbers[floorName]) {
+            floorNumbers[floorName] = nextFloorNumber++;
+            mocoCounters[floorName] = 1;
+          }
+          
+          console.log('Processing floor:', floorName, 'at path:', floorPath);
+          
+          // Get all moco names (folders under this floor)
+          return getFolderNames(floorPath)
+            .then(mocoNames => {
+              if (!mocoNames || mocoNames.length === 0) {
+                console.warn('No mocos found for floor:', floorName);
+                return;
+              }
+
+              const mocoPromises = mocoNames.map(mocoName => {
+                const mocoPath = `${floorPath}/${mocoName}`;
+                console.log('Processing moco:', mocoName, 'at path:', mocoPath);
+                
+                return checkErrorStatus(mocoPath)
+                  .then(hasFault => {
+                    statusData.push({
+                      floor: floorName,
+                      moco: mocoName,
+                      mocoFault: hasFault ? "fault" : "No fault",
+                      id1: floorNumbers[floorName],
+                      id2: mocoCounters[floorName]++,
+                      floorPath: floorPath,
+                      mocoPath: mocoPath
+                    });
+                  });
+              });
+
+              return Promise.all(mocoPromises);
+            });
+        });
+        
+        return Promise.all(floorPromises).then(() => {
+          console.log('Final status data:', statusData);
+          return statusData;
+        });
+      })
+      .catch(err => {
+        console.error('Error in fetchStatusData:', err);
+        return [];
+      });
+  }
+
+
+  // function displayCards(data) {
+  //   console.log('Displaying cards with data:', data);
+  //   const cardsContainer = document.getElementById('cards-container');
+  //   if (!cardsContainer) {
+  //     console.error('cards-container element not found!');
+  //     return;
+  //   }
+  //   cardsContainer.innerHTML = '';
+
+  //   if (data.length === 0) {
+  //     cardsContainer.innerHTML = '<div class="no-data">No devices found at the specified path</div>';
+  //     return;
+  //   }
+
+  //   data.forEach(item => {
+  //     const card = document.createElement('div');
+  //     card.className = 'bg-white-100 p-2 rounded-lg card h-auto flex flex-col w-auto';
+      
+  //     const icon = item.mocoFault === 'fault' 
+  //       ? '<i class="fas fa-exclamation-circle text-red-500 text-3xl"></i>' 
+  //       : '<i class="fas fa-check-circle text-green-500 text-3xl"></i>';
+      
+  //     card.innerHTML = `
+  //       <div class="m-0 p-0 flex items-center justify-between">
+  //         <div class="m-2 p-0 rounded-full">${icon}</div>
+  //         <h3 class="text-center font-bold text-3xl">${item.floor}</h3>
+  //       </div>
+  //       <div class="flex items-center justify-between pt-2 m-2">
+  //         <div class="ml-4">
+  //           <h5 class="text-gray-600 text-xl">${item.moco}</h5>
+  //           <p class="text-${item.mocoFault === 'fault' ? 'red' : 'green'}-500 text-xl">
+  //             Status: ${item.mocoFault}
+  //           </p>
+  //         </div>
+  //       </div>
+  //     `;
+      
+  //     card.onclick = () => {
+  //       localStorage.setItem('selectedMotorId', item.id1);
+  //       localStorage.setItem('floorMocoId', item.id2);
+  //       localStorage.setItem('floorPath', item.floorPath);
+  //       localStorage.setItem('mocoPath', item.mocoPath);
+  //       window.location.href = 'motorStatusControl.html';
+  //     };
+      
+  //     cardsContainer.appendChild(card);
+  //   });
+  // }
+
+  // Main execution
+  
+  let currentPage = 1;
         const itemsPerPage = 12;
         const totalPages = Math.ceil(statusData.length / itemsPerPage);
 
@@ -184,21 +394,22 @@ const statusData = [
                 <div class=" m-2 text-white p-0 rounded-full">
                     ${mocoIcon}
                 </div>
-                <h3 class="text-center font-bold text-3xl ">${data.floor} </h3>
+                <h3 class="text-center font-bold text-3xl ">${item.floor} </h3>
             </div>
             <div class="flex items-center justify-between pt-2 m-2">
                 <div class="ml-4">
-                    <h5 class="text-gray-600 text-xl">${data.moco}</h5>
-                    <p class="text-${data.mocoFault === 'fault' ? 'red' : 'green'}-500 text-xl">Status: ${data.mocoFault}</p>
+                    <h5 class="text-gray-600 text-xl">${item.moco}</h5>
+                    <p class="text-${item.mocoFault === 'fault' ? 'red' : 'green'}-500 text-xl">Status: ${item.mocoFault}</p>
                 </div>
             </div>
         `;
-        // card.onclick = () => {
-        //             window.location.href = `finalmotorstatus.html?id=${data.id}`; // Navigate to test.html with motor ID
-        //         };
         card.onclick = () => {
-                    window.location.href = `motorStatusControl.html?id=${data.id}`; // Navigate to test.html with motor ID
-                };
+        localStorage.setItem('selectedMotorId', item.id1);
+        localStorage.setItem('floorMocoId', item.id2);
+        localStorage.setItem('floorPath', item.floorPath);
+        localStorage.setItem('mocoPath', item.mocoPath);
+        window.location.href = 'motorStatusControl.html';
+      };
         cardsContainer.appendChild(card);
     });
 
@@ -243,29 +454,63 @@ function updatePagination() {
             paginationContainer.appendChild(nextButton);
         }
 
-        displayCards(); // Initialize the page
-        // document.addEventListener('click', (event) => {
-        //     const card = document.getElementById('card');
-        //     if (!dropdownButton.contains(event.target) && !dropdownContent.contains(event.target)) {
-        //         dropdownContent.style.display = 'none';
-        //     }
-        // });
-
-        const dropdownButton = document.getElementById('dropdownButton');
-        console.log(dropdownButton);
-        const dropdownContent = document.querySelector('.dropdown-content');
-
-        dropdownButton.addEventListener('click', () => {
-            dropdownContent.style.display = dropdownContent.style.display === 'block' ? 'none' : 'block';
-            console.log("clicked");
-        });
-
-        document.addEventListener('click', (event) => {
-            if (!dropdownButton.contains(event.target) && !dropdownContent.contains(event.target)) {
-                dropdownContent.style.display = 'none';
-            }
-        });
+  
+  console.log('Initializing application...');
+  fetchStatusData()
+    .then(data => {
+      console.log('Data to display:', data);
+      displayCards(data);
+    })
+    .catch(error => {
+      console.error('Initialization failed:', error);
+      const container = document.getElementById('cards-container');
+      if (container) {
+        container.innerHTML = '<div class="error">Failed to load data</div>';
+      }
+    });
+});
     </script>
+  <!--  function displayCards(data) {-->
+  <!--  const cardsContainer = document.getElementById('cards-container');-->
+  <!--  cardsContainer.innerHTML = '';-->
+
+  <!--  if (data.length === 0) {-->
+  <!--    cardsContainer.innerHTML = '<div class="no-data">No devices found</div>';-->
+  <!--    return;-->
+  <!--  }-->
+
+  <!--  data.forEach((item) => {-->
+  <!--    const card = document.createElement('div');-->
+  <!--    card.classList.add('bg-white-100', 'p-2', 'rounded-lg', 'card', 'h-auto', 'flex', 'flex-col', 'w-auto');-->
+      
+  <!--    const mocoIcon = item.mocoFault === 'fault' -->
+  <!--      ? `<i class="fas fa-exclamation-circle text-red-500 text-3xl"></i>` -->
+  <!--      : `<i class="fas fa-check-circle text-green-500 text-3xl"></i>`;-->
+      
+  <!--    card.innerHTML = `-->
+  <!--      <div class="m-0 p-0 flex items-center justify-content-between">-->
+  <!--        <div class="m-2 text-white p-0 rounded-full">-->
+  <!--          ${mocoIcon}-->
+  <!--        </div>-->
+  <!--        <h3 class="text-center font-bold text-3xl">${item.floor}</h3>-->
+  <!--      </div>-->
+  <!--      <div class="flex items-center justify-between pt-2 m-2">-->
+  <!--        <div class="ml-4">-->
+  <!--          <h5 class="text-gray-600 text-xl">${item.moco}</h5>-->
+  <!--          <p class="text-${item.mocoFault === 'fault' ? 'red' : 'green'}-500 text-xl">Status: ${item.mocoFault}</p>-->
+  <!--        </div>-->
+  <!--      </div>-->
+  <!--    `;-->
+      
+  <!--    card.onclick = () => {-->
+  <!--      localStorage.setItem('selectedMotorId', item.id1);-->
+  <!--      localStorage.setItem('floorMocoId', item.id2);-->
+  <!--      window.location.href = 'motorStatusControl.html';-->
+  <!--    };-->
+      
+  <!--    cardsContainer.appendChild(card);-->
+  <!--  });-->
+  <!--}-->
 </body>
 
 </html>
